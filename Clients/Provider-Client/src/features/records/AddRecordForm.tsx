@@ -11,11 +11,12 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Select";
 import { dismissToast, toast } from "@/components/ui/toast-store";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
   RECORD_TYPE_OPTIONS,
   formatPassportId,
-  type Provider,
+  formatPractitionerId,
+  type Practitioner,
   type RecordType,
 } from "@/lib/domain";
 import { formatRelative } from "@/lib/format";
@@ -30,10 +31,10 @@ import { errorMessage } from "@/lib/utils";
  * the hash of the encrypted file and the hash of its storage pointer. Hashing
  * the file in this browser means the plaintext never transits the client.
  */
-export function AddRecordForm({ provider }: { provider: Provider }) {
+export function AddRecordForm({ practitioner }: { practitioner: Practitioner }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { liveGrants, refresh } = useProviderData();
+  const { liveGrants, refresh } = usePractitionerData();
 
   const grantOptions = liveGrants.map((grant) => ({
     value: String(grant.passportId),
@@ -62,7 +63,7 @@ export function AddRecordForm({ provider }: { provider: Provider }) {
         <Card>
           <EmptyState
             title="No live grant to write against"
-            description="A record can only be added while a patient has an open grant for your organisation. Request access and wait for them to approve it."
+            description="A record can only be added while a patient has an open grant for you. Request access and wait for them to approve it."
             action={<LinkButton href="/access/new">Request access</LinkButton>}
           />
         </Card>
@@ -83,7 +84,9 @@ export function AddRecordForm({ provider }: { provider: Provider }) {
   }
 
   async function derivePointer() {
-    setPointerHash(await sha256Hex(`vault:${provider.providerId}:${passportId}:${Date.now()}`));
+    setPointerHash(
+      await sha256Hex(`vault:${practitioner.practitionerId}:${passportId}:${Date.now()}`),
+    );
     setErrors((current) => ({ ...current, pointerHash: undefined }));
   }
 
@@ -104,7 +107,7 @@ export function AddRecordForm({ provider }: { provider: Provider }) {
     const pendingId = toast.pending("Anchoring the record on Stellar…");
     try {
       const { txHash } = await locka.addRecord({
-        providerId: provider.providerId,
+        practitionerId: practitioner.practitionerId,
         passportId: Number(passportId),
         recordType,
         title: title.trim(),
@@ -137,6 +140,15 @@ export function AddRecordForm({ provider }: { provider: Provider }) {
         that encrypted file and the hash of its storage pointer.
       </Callout>
 
+      <Callout tone="success" title="Signed as you">
+        This record is stamped with{" "}
+        <strong className="font-medium text-foreground">
+          {formatPractitionerId(practitioner.practitionerId)}
+        </strong>
+        , so the patient and any later practitioner can trace it back to {practitioner.fullName} at{" "}
+        {practitioner.organizationName}.
+      </Callout>
+
       <Card title="Record">
         <form onSubmit={handleSubmit} className="space-y-5">
           <Select
@@ -144,7 +156,7 @@ export function AddRecordForm({ provider }: { provider: Provider }) {
             value={passportId}
             onChange={(event) => setPassportId(event.target.value)}
             options={grantOptions}
-            helperText="Only passports with an open grant for your organisation are listed."
+            helperText="Only passports with an open grant for you are listed."
             required
           />
 

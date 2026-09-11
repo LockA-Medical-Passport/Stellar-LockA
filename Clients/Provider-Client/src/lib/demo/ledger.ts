@@ -1,11 +1,12 @@
-import { DEMO_PROVIDER_ADDRESS } from "@/features/wallet/adapter";
+import { DEMO_PRACTITIONER_ADDRESS } from "@/features/wallet/adapter";
 import type {
   AccessRequest,
   AuditEvent,
   AuditEventKind,
   MedicalRecord,
   PassportStatus,
-  Provider,
+  Practitioner,
+  PractitionerRef,
 } from "@/lib/domain";
 
 /**
@@ -50,35 +51,50 @@ export const DEMO_PASSPORTS: { passportId: number; status: PassportStatus }[] = 
 ];
 
 export interface DemoState {
-  provider: Provider | null;
+  practitioner: Practitioner | null;
   accessRequests: AccessRequest[];
   records: MedicalRecord[];
   auditEvents: AuditEvent[];
   nextAccessId: number;
+  nextPractitionerId: number;
 }
 
 let state: DemoState | null = null;
 
+/** The stamp this practitioner puts on everything they issue. */
+function refOf(practitioner: Practitioner): PractitionerRef {
+  return {
+    practitionerId: practitioner.practitionerId,
+    fullName: practitioner.fullName,
+    role: practitioner.role,
+    organizationName: practitioner.organizationName,
+  };
+}
+
 function seed(): DemoState {
   const now = Math.floor(Date.now() / 1000);
 
-  const provider: Provider = {
-    providerId: DEMO_PROVIDER_ADDRESS,
-    name: "Lagos General Hospital",
-    providerType: "Hospital",
+  const practitioner: Practitioner = {
+    practitionerId: 142,
+    walletAddress: DEMO_PRACTITIONER_ADDRESS,
+    fullName: "Amara Chinelo Nwosu",
+    role: "Doctor",
+    licenseNumber: "MDCN/R/58214",
+    licenseHash: hash32("license:MDCN/R/58214"),
+    organizationName: "Lagos General Hospital",
+    organizationType: "Hospital",
     country: "Nigeria",
-    licenseHash: hash32("license:lagos-general"),
     status: "Verified",
     registeredAt: now - 320 * DAY,
   };
+
+  const issuedBy = refOf(practitioner);
 
   const accessRequests: AccessRequest[] = [
     {
       accessId: 5104,
       passportId: 10427,
-      providerId: provider.providerId,
-      providerName: provider.name,
-      providerType: provider.providerType,
+      requestedBy: issuedBy,
       recordScope: "EmergencySummaryOnly",
       durationSeconds: 24 * HOUR,
       purpose: "Pre-operative assessment ahead of scheduled surgery on Thursday.",
@@ -89,9 +105,7 @@ function seed(): DemoState {
     {
       accessId: 5101,
       passportId: 10431,
-      providerId: provider.providerId,
-      providerName: provider.name,
-      providerType: provider.providerType,
+      requestedBy: issuedBy,
       recordScope: "AllRecords",
       durationSeconds: 7 * DAY,
       purpose: "Admitted through accident and emergency; full history needed.",
@@ -102,12 +116,10 @@ function seed(): DemoState {
     {
       accessId: 5099,
       passportId: 10402,
-      providerId: provider.providerId,
-      providerName: provider.name,
-      providerType: provider.providerType,
-      recordScope: "LabResultsOnly",
+      requestedBy: issuedBy,
+      recordScope: "PrescriptionsOnly",
       durationSeconds: 24 * HOUR,
-      purpose: "Reviewing results before a follow-up appointment.",
+      purpose: "Reviewing current medication before a follow-up appointment.",
       status: "Approved",
       requestedAt: now - 10 * HOUR,
       expiresAt: now + 14 * HOUR,
@@ -115,9 +127,7 @@ function seed(): DemoState {
     {
       accessId: 5090,
       passportId: 10388,
-      providerId: provider.providerId,
-      providerName: provider.name,
-      providerType: provider.providerType,
+      requestedBy: issuedBy,
       recordScope: "AllRecords",
       durationSeconds: 30 * DAY,
       purpose: "Chronic care programme enrolment.",
@@ -128,9 +138,7 @@ function seed(): DemoState {
     {
       accessId: 5077,
       passportId: 10427,
-      providerId: provider.providerId,
-      providerName: provider.name,
-      providerType: provider.providerType,
+      requestedBy: issuedBy,
       recordScope: "AllRecords",
       durationSeconds: 7 * DAY,
       purpose: "Day surgery admission and discharge planning.",
@@ -144,8 +152,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:penicillin-allergy"),
       passportId: 10427,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "AllergyRecord",
       title: "Penicillin allergy — anaphylaxis risk",
       encryptedFileHash: hash32("file:penicillin-allergy"),
@@ -156,8 +163,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:yellow-fever"),
       passportId: 10427,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "Vaccination",
       title: "Yellow fever vaccination",
       encryptedFileHash: hash32("file:yellow-fever"),
@@ -168,8 +174,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:discharge-summary"),
       passportId: 10427,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "MedicalSummary",
       title: "Discharge summary — day surgery",
       encryptedFileHash: hash32("file:discharge-summary"),
@@ -180,8 +185,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:ae-triage"),
       passportId: 10431,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "Diagnosis",
       title: "Accident and emergency triage note",
       encryptedFileHash: hash32("file:ae-triage"),
@@ -192,8 +196,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:ae-triage-draft"),
       passportId: 10431,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "Diagnosis",
       title: "Accident and emergency triage note (superseded)",
       encryptedFileHash: hash32("file:ae-triage-draft"),
@@ -204,8 +207,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:paracetamol"),
       passportId: 10402,
-      providerId: provider.providerId,
-      providerName: provider.name,
+      issuedBy,
       recordType: "Prescription",
       title: "Paracetamol 1g, 5 days",
       encryptedFileHash: hash32("file:paracetamol"),
@@ -215,27 +217,23 @@ function seed(): DemoState {
     },
   ];
 
+  const who = practitioner.fullName;
   const auditEvents: AuditEvent[] = [
     event(
       "AccessRequested",
-      provider.name,
+      who,
       "Requested emergency summary access for LP-010427",
       now - 4 * HOUR,
     ),
-    event(
-      "RecordAdded",
-      provider.name,
-      "Paracetamol prescription added for LP-010402",
-      now - 9 * HOUR,
-    ),
+    event("RecordAdded", who, "Paracetamol prescription issued to LP-010402", now - 9 * HOUR),
     event(
       "AccessApproved",
       "LP-010402",
-      "Patient approved 24 hours of lab result access",
+      "Patient approved 24 hours of prescription access",
       now - 10 * HOUR,
     ),
     event("AccessApproved", "LP-010431", "Patient approved 7 days of full access", now - 2 * DAY),
-    event("RecordAmended", provider.name, "Triage note superseded for LP-010431", now - 2 * DAY),
+    event("RecordAmended", who, "Triage note superseded for LP-010431", now - 2 * DAY),
     event("AccessRejected", "LP-010388", "Patient rejected a full-access request", now - 34 * DAY),
     event(
       "AccessRevoked",
@@ -243,9 +241,22 @@ function seed(): DemoState {
       "Patient revoked full access after discharge",
       now - 140 * DAY,
     ),
+    event(
+      "PractitionerRegistered",
+      who,
+      "Registered as PR-000142 at Lagos General Hospital",
+      now - 320 * DAY,
+    ),
   ];
 
-  return { provider, accessRequests, records, auditEvents, nextAccessId: 5105 };
+  return {
+    practitioner,
+    accessRequests,
+    records,
+    auditEvents,
+    nextAccessId: 5105,
+    nextPractitionerId: 143,
+  };
 }
 
 function event(kind: AuditEventKind, actor: string, summary: string, at: number): AuditEvent {
@@ -264,3 +275,5 @@ export function recordEvent(kind: AuditEventKind, actor: string, summary: string
   ledger().auditEvents = [entry, ...ledger().auditEvents];
   return entry.txHash;
 }
+
+export { refOf };

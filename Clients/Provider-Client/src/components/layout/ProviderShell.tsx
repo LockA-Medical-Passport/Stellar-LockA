@@ -1,21 +1,21 @@
 "use client";
 
 import { type ReactNode } from "react";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { AppShell } from "./AppShell";
 import {
-  BuildingIcon,
   ConsentIcon,
   GearIcon,
   GridIcon,
   PassportIcon,
   RecordsIcon,
   ShieldCheckIcon,
+  UserIcon,
   type NavItem,
 } from "./Sidebar";
 
 export function ProviderShell({ children }: { children: ReactNode }) {
-  const { pendingRequests } = useProviderData();
+  const { pendingRequests } = usePractitionerData();
 
   const navItems: NavItem[] = [
     { href: "/", label: "Overview", icon: <GridIcon /> },
@@ -28,12 +28,12 @@ export function ProviderShell({ children }: { children: ReactNode }) {
     },
     { href: "/records", label: "Issued records", icon: <RecordsIcon /> },
     { href: "/verify", label: "Verify a document", icon: <ShieldCheckIcon /> },
-    { href: "/profile", label: "Organisation", icon: <BuildingIcon /> },
+    { href: "/profile", label: "My registration", icon: <UserIcon /> },
     { href: "/settings", label: "Settings", icon: <GearIcon /> },
   ];
 
   return (
-    <AppShell brandSubtitle="Provider portal" navItems={navItems}>
+    <AppShell brandSubtitle="Practitioner portal" navItems={navItems}>
       {children}
     </AppShell>
   );

@@ -19,12 +19,12 @@ const CONTRACTS = [
   {
     key: "providerRegistry" as const,
     name: "ProviderRegistry",
-    role: "Holds your organisation's entry and its verification status.",
+    role: "Holds your practitioner id, licence commitment, and status.",
   },
   {
     key: "medicalRecordRegistry" as const,
     name: "MedicalRecordRegistry",
-    role: "Anchors a hash per record you issue, so documents can be checked.",
+    role: "Anchors a hash per record you issue, stamped with your practitioner id.",
   },
   {
     key: "consentAccessManager" as const,

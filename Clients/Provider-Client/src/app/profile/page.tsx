@@ -1,19 +1,19 @@
 "use client";
 
-import { ProviderGate } from "@/features/provider/ProviderGate";
-import { ProviderProfile } from "@/features/provider/ProviderProfile";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
+import { PractitionerProfile } from "@/features/practitioner/PractitionerProfile";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 
 export default function ProfilePage() {
   return (
-    <ProviderGate>
+    <PractitionerGate>
       <ProfileView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }
 
 function ProfileView() {
-  const { provider } = useProviderData();
-  if (!provider) return null;
-  return <ProviderProfile provider={provider} />;
+  const { practitioner } = usePractitionerData();
+  if (!practitioner) return null;
+  return <PractitionerProfile practitioner={practitioner} />;
 }

@@ -25,15 +25,15 @@ export interface WalletAdapter {
   disconnect(): Promise<void>;
 }
 
-const STORAGE_KEY = "locka.provider.wallet";
+const STORAGE_KEY = "locka.practitioner.wallet";
 
 /**
  * A testnet account used to populate the sample ledger.
  *
- * In the contracts a provider is addressed by its Stellar account, so this
- * doubles as the demo provider's id.
+ * The account holds one individual practitioner's registration. The registry
+ * mints the practitioner id; the account is only how they sign.
  */
-export const DEMO_PROVIDER_ADDRESS = "GCHOSPITALLAGOSGENERALPIQJRKSLTMUNVOWPXQYRZS2T3U4V5W6X7Y";
+export const DEMO_PRACTITIONER_ADDRESS = "GDDOCTORAMARANWOSULIMJNKOLPMQNROSPTQURVSWTXUYVZW2X3Y4Z52";
 
 const demoAdapter: WalletAdapter = {
   id: "demo",
@@ -45,8 +45,8 @@ const demoAdapter: WalletAdapter = {
   async connect() {
     // Stands in for the wallet's approval prompt.
     await new Promise((resolve) => setTimeout(resolve, 400));
-    window.localStorage.setItem(STORAGE_KEY, DEMO_PROVIDER_ADDRESS);
-    return DEMO_PROVIDER_ADDRESS;
+    window.localStorage.setItem(STORAGE_KEY, DEMO_PRACTITIONER_ADDRESS);
+    return DEMO_PRACTITIONER_ADDRESS;
   },
 
   async restore() {

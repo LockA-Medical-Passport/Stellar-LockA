@@ -4,25 +4,35 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Callout } from "@/components/ui/Callout";
 import { Card } from "@/components/ui/Card";
+import { CopyableValue } from "@/components/ui/CopyableValue";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatCard } from "@/components/ui/StatCard";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
   AUDIT_EVENT_LABELS,
+  ORGANIZATION_TYPE_LABELS,
+  PRACTITIONER_ROLE_LABELS,
   PROVIDER_STATUS_LABELS,
   PROVIDER_STATUS_VARIANTS,
-  PROVIDER_TYPE_LABELS,
   RECORD_SCOPE_LABELS,
   formatPassportId,
-  type Provider,
+  formatPractitionerId,
+  type Practitioner,
 } from "@/lib/domain";
 import { formatRelative, pluralize } from "@/lib/format";
 
-export function ProviderOverview({ provider }: { provider: Provider }) {
-  const { accessRequests, pendingRequests, liveGrants, records, auditEvents, refresh, isVerified } =
-    useProviderData();
+export function PractitionerOverview({ practitioner }: { practitioner: Practitioner }) {
+  const {
+    accessRequests,
+    pendingRequests,
+    liveGrants,
+    records,
+    auditEvents,
+    refresh,
+    canPractise,
+  } = usePractitionerData();
 
   const recentEvents = auditEvents.slice(0, 6);
   const activeRecords = records.filter((record) => record.status === "Active");
@@ -30,8 +40,8 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader
-        title={provider.name}
-        description={`${PROVIDER_TYPE_LABELS[provider.providerType]} · ${provider.country} · registered ${formatRelative(provider.registeredAt)}`}
+        title={practitioner.fullName}
+        description={`${PRACTITIONER_ROLE_LABELS[practitioner.role]} at ${practitioner.organizationName} · ${ORGANIZATION_TYPE_LABELS[practitioner.organizationType]}, ${practitioner.country}`}
         action={
           <Button variant="secondary" size="sm" onClick={refresh}>
             Refresh
@@ -39,35 +49,39 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
         }
       />
 
-      {!isVerified && (
+      {!canPractise && (
         <Callout
-          tone={provider.status === "Pending" ? "warning" : "danger"}
-          title={
-            provider.status === "Pending"
-              ? "Awaiting administrator verification"
-              : `Registration ${provider.status.toLowerCase()}`
-          }
+          tone="danger"
+          title={`Registration ${PROVIDER_STATUS_LABELS[practitioner.status].toLowerCase()}`}
           action={
             <LinkButton href="/profile" size="sm" variant="secondary">
-              Organisation
+              My registration
             </LinkButton>
           }
         >
-          Requesting patient access and writing records stay locked until this organisation is
-          verified in the provider registry.
+          Requesting patient access and issuing records are blocked while your registration is in
+          this state.
         </Callout>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Registry status"
-          accent={isVerified ? "green" : "amber"}
+          label="Practitioner id"
+          accent="cyan"
           value={
-            <Badge variant={PROVIDER_STATUS_VARIANTS[provider.status]}>
-              {PROVIDER_STATUS_LABELS[provider.status]}
+            <span className="font-mono">{formatPractitionerId(practitioner.practitionerId)}</span>
+          }
+          detail="Stamped on everything you issue"
+        />
+        <StatCard
+          label="Registry status"
+          accent={canPractise ? "green" : "amber"}
+          value={
+            <Badge variant={PROVIDER_STATUS_VARIANTS[practitioner.status]}>
+              {PROVIDER_STATUS_LABELS[practitioner.status]}
             </Badge>
           }
-          detail={PROVIDER_TYPE_LABELS[provider.providerType]}
+          detail={PRACTITIONER_ROLE_LABELS[practitioner.role]}
         />
         <StatCard
           label="Open grants"
@@ -80,16 +94,10 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
           }
         />
         <StatCard
-          label="Awaiting patients"
-          accent={pendingRequests.length > 0 ? "amber" : "gray"}
-          value={pendingRequests.length}
-          detail={pendingRequests.length > 0 ? "Requests sent, undecided" : "Nothing outstanding"}
-        />
-        <StatCard
           label="Records issued"
-          accent="cyan"
+          accent="green"
           value={records.length}
-          detail={`${activeRecords.length} active`}
+          detail={`${activeRecords.length} active${pendingRequests.length > 0 ? ` · ${pendingRequests.length} request${pendingRequests.length === 1 ? "" : "s"} pending` : ""}`}
         />
       </div>
 
@@ -107,7 +115,7 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
               title="No open grants"
               description="Request access with a patient's passport id. They choose the category and the window."
               action={
-                isVerified ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
+                canPractise ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
               }
             />
           ) : (
@@ -159,19 +167,42 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
         </Card>
       </div>
 
+      <Card title="Your stamp">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm text-foreground/70">
+              Every record and access request carries{" "}
+              <span className="font-mono text-locka-cyan">
+                {formatPractitionerId(practitioner.practitionerId)}
+              </span>
+              , alongside your name, role, and organisation. A patient reading a result years from
+              now can still see who issued it.
+            </p>
+            <p className="mt-2 text-xs text-foreground/45">
+              {pluralize(accessRequests.length, "request")} sent · licence{" "}
+              {practitioner.licenseNumber}
+            </p>
+          </div>
+          <CopyableValue
+            value={formatPractitionerId(practitioner.practitionerId)}
+            display="Copy id"
+          />
+        </div>
+      </Card>
+
       <Card title="What to do next">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <NextStep
             title="Request access"
             body="Ask a patient for one record category and one window."
             href="/access/new"
-            disabled={!isVerified}
+            disabled={!canPractise}
           />
           <NextStep
-            title="Add a record"
-            body="Anchor a record against a passport you hold a grant for."
+            title="Issue a record"
+            body="Anchor a result against a passport you hold a grant for."
             href="/records/new"
-            disabled={!isVerified || liveGrants.length === 0}
+            disabled={!canPractise || liveGrants.length === 0}
           />
           <NextStep
             title="Verify a document"
@@ -179,9 +210,6 @@ export function ProviderOverview({ provider }: { provider: Provider }) {
             href="/verify"
           />
         </div>
-        <p className="mt-4 text-xs text-foreground/45">
-          {pluralize(accessRequests.length, "request")} sent in total.
-        </p>
       </Card>
     </div>
   );

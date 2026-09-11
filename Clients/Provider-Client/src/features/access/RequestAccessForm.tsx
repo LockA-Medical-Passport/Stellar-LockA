@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { dismissToast, toast } from "@/components/ui/toast-store";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
   PASSPORT_STATUS_LABELS,
   PASSPORT_STATUS_VARIANTS,
@@ -19,7 +19,8 @@ import {
   RECORD_SCOPE_OPTIONS,
   formatPassportId,
   parsePassportId,
-  type Provider,
+  formatPractitionerId,
+  type Practitioner,
   type RecordScope,
 } from "@/lib/domain";
 import { ACCESS_DURATION_OPTIONS, formatDuration } from "@/lib/format";
@@ -32,9 +33,9 @@ import { errorMessage } from "@/lib/utils";
  * The passport id is checked first so a typo fails here rather than as a
  * request the patient has to reject.
  */
-export function RequestAccessForm({ provider }: { provider: Provider }) {
+export function RequestAccessForm({ practitioner }: { practitioner: Practitioner }) {
   const router = useRouter();
-  const { refresh } = useProviderData();
+  const { refresh } = usePractitionerData();
 
   const [passportInput, setPassportInput] = useState("");
   const [lookup, setLookup] = useState<PassportLookup | null>(null);
@@ -84,7 +85,7 @@ export function RequestAccessForm({ provider }: { provider: Provider }) {
     const pendingId = toast.pending("Sending the request…");
     try {
       const { request, txHash } = await locka.requestAccess({
-        providerId: provider.providerId,
+        practitionerId: practitioner.practitionerId,
         passportId,
         recordScope: scope,
         durationSeconds: Number(duration),
@@ -114,6 +115,15 @@ export function RequestAccessForm({ provider }: { provider: Provider }) {
       <Callout tone="info" title="Ask for the minimum the visit needs">
         A narrow request is approved faster and keeps you inside the platform&apos;s
         minimum-disclosure rule. Patients can also grant less than you ask for.
+      </Callout>
+
+      <Callout tone="success" title="The patient will see who is asking">
+        This request goes out as{" "}
+        <strong className="font-medium text-foreground">{practitioner.fullName}</strong>,{" "}
+        <span className="font-mono text-locka-cyan">
+          {formatPractitionerId(practitioner.practitionerId)}
+        </span>
+        , at {practitioner.organizationName}.
       </Callout>
 
       <Card title="Request">

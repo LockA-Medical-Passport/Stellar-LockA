@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { toast } from "@/components/ui/toast-store";
-import { clearProvider, loadProvider } from "@/features/provider/provider-store";
+import { clearPractitioner, loadPractitioner } from "@/features/practitioner/practitioner-store";
 import { errorMessage } from "@/lib/utils";
 import { walletAdapter } from "./adapter";
 
@@ -27,9 +27,9 @@ export interface WalletState {
 const WalletContext = createContext<WalletState | null>(null);
 
 /**
- * Owns the connected account and, with it, the provider read.
+ * Owns the connected account and, with it, the practitioner read.
  *
- * An account appearing is the event that makes provider data fetchable, so the
+ * An account appearing is the event that makes practitioner data fetchable, so the
  * load is kicked off from here rather than from a render effect in every screen.
  */
 export function WalletProvider({ children }: { children: ReactNode }) {
@@ -44,7 +44,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       .restore()
       .then((restored) => {
         if (cancelled) return;
-        if (restored) void loadProvider(restored);
+        if (restored) void loadPractitioner(restored);
         setAddress(restored);
       })
       .catch(() => {
@@ -63,7 +63,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     setConnecting(true);
     try {
       const connected = await walletAdapter.connect();
-      void loadProvider(connected);
+      void loadPractitioner(connected);
       setAddress(connected);
     } catch (error) {
       toast.error(errorMessage(error), { title: "Could not connect wallet" });
@@ -74,7 +74,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(async () => {
     await walletAdapter.disconnect();
-    clearProvider();
+    clearPractitioner();
     setAddress(null);
   }, []);
 
