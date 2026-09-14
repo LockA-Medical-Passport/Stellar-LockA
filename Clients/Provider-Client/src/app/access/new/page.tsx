@@ -1,19 +1,19 @@
 "use client";
 
 import { RequestAccessForm } from "@/features/access/RequestAccessForm";
-import { ProviderGate } from "@/features/provider/ProviderGate";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 
 export default function RequestAccessPage() {
   return (
-    <ProviderGate requireVerified>
+    <PractitionerGate requirePractising>
       <RequestAccessView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }
 
 function RequestAccessView() {
-  const { provider } = useProviderData();
-  if (!provider) return null;
-  return <RequestAccessForm provider={provider} />;
+  const { practitioner } = usePractitionerData();
+  if (!practitioner) return null;
+  return <RequestAccessForm practitioner={practitioner} />;
 }

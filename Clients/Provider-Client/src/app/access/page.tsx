@@ -1,12 +1,12 @@
 "use client";
 
 import { AccessView } from "@/features/access/AccessView";
-import { ProviderGate } from "@/features/provider/ProviderGate";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
 
 export default function AccessPage() {
   return (
-    <ProviderGate>
+    <PractitionerGate>
       <AccessView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }

@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { dismissToast, toast } from "@/components/ui/toast-store";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
   ACCESS_STATUS_LABELS,
   ACCESS_STATUS_VARIANTS,
   RECORD_SCOPE_LABELS,
   formatPassportId,
+  formatPractitionerId,
   type AccessRequest,
 } from "@/lib/domain";
 import { formatDateTime, formatDuration, formatRelative } from "@/lib/format";
@@ -21,9 +22,9 @@ export interface AccessRequestCardProps {
   request: AccessRequest;
 }
 
-/** One request this provider sent, and what can still be done with it. */
+/** One request this practitioner sent, and what can still be done with it. */
 export function AccessRequestCard({ request }: AccessRequestCardProps) {
-  const { refresh } = useProviderData();
+  const { refresh } = usePractitionerData();
   const [revoking, setRevoking] = useState(false);
 
   async function handleRevoke() {
@@ -52,7 +53,8 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
             {formatPassportId(request.passportId)}
           </h3>
           <p className="mt-1 text-xs text-foreground/50">
-            Sent {formatRelative(request.requestedAt)} · request #{request.accessId}
+            Sent {formatRelative(request.requestedAt)} · request #{request.accessId} · as{" "}
+            {formatPractitionerId(request.requestedBy.practitionerId)}
           </p>
         </div>
         <Badge variant={ACCESS_STATUS_VARIANTS[request.status]}>

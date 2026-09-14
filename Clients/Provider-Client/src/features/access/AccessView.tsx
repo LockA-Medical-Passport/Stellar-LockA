@@ -5,12 +5,13 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { pluralize } from "@/lib/format";
 import { AccessRequestCard } from "./AccessRequestCard";
 
 export function AccessView() {
-  const { accessRequests, pendingRequests, liveGrants, refresh, isVerified } = useProviderData();
+  const { accessRequests, pendingRequests, liveGrants, refresh, canPractise } =
+    usePractitionerData();
   const history = accessRequests.filter(
     (request) => request.status !== "Pending" && request.status !== "Approved",
   );
@@ -25,7 +26,7 @@ export function AccessView() {
             <Button variant="secondary" size="sm" onClick={refresh}>
               Refresh
             </Button>
-            {isVerified && (
+            {canPractise && (
               <LinkButton href="/access/new" size="sm">
                 Request access
               </LinkButton>
@@ -40,7 +41,7 @@ export function AccessView() {
             title="No requests yet"
             description="Request access with a patient's passport id. They decide the category and the window before you can read anything."
             action={
-              isVerified ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
+              canPractise ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
             }
           />
         </Card>

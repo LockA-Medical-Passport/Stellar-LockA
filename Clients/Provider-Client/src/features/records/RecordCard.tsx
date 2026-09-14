@@ -8,12 +8,14 @@ import { CopyableValue } from "@/components/ui/CopyableValue";
 import { Modal } from "@/components/ui/Modal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { dismissToast, toast } from "@/components/ui/toast-store";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
+  PRACTITIONER_ROLE_LABELS,
   RECORD_STATUS_LABELS,
   RECORD_STATUS_VARIANTS,
   RECORD_TYPE_LABELS,
   formatPassportId,
+  formatPractitionerId,
   type MedicalRecord,
   type RecordStatus,
 } from "@/lib/domain";
@@ -30,7 +32,7 @@ export interface RecordCardProps {
 }
 
 export function RecordCard({ record, manageable = false, className }: RecordCardProps) {
-  const { refresh } = useProviderData();
+  const { refresh } = usePractitionerData();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState<RecordStatus | null>(null);
   const [busy, setBusy] = useState(false);
@@ -69,14 +71,26 @@ export function RecordCard({ record, manageable = false, className }: RecordCard
             </Badge>
           </div>
           <p className="mt-1 text-xs text-foreground/50">
-            {formatPassportId(record.passportId)} · {record.providerName} ·{" "}
-            {formatDate(record.issuedAt)}
+            {formatPassportId(record.passportId)} · {formatDate(record.issuedAt)}
           </p>
         </div>
         <Badge variant={RECORD_STATUS_VARIANTS[record.status]}>
           {RECORD_STATUS_LABELS[record.status]}
         </Badge>
       </div>
+
+      {/* The practitioner stamp: who signed this, and under which id. */}
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/60">
+        <span className="font-medium text-foreground/80">{record.issuedBy.fullName}</span>
+        <span aria-hidden="true">·</span>
+        <span>{PRACTITIONER_ROLE_LABELS[record.issuedBy.role]}</span>
+        <span aria-hidden="true">·</span>
+        <span className="font-mono text-locka-cyan">
+          {formatPractitionerId(record.issuedBy.practitionerId)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>{record.issuedBy.organizationName}</span>
+      </p>
 
       <button
         type="button"
@@ -109,10 +123,17 @@ export function RecordCard({ record, manageable = false, className }: RecordCard
             </InfoRow>
             <InfoRow label="Passport">
               <CopyableValue
-                value={String(record.passportId)}
+                value={formatPassportId(record.passportId)}
                 display={formatPassportId(record.passportId)}
               />
             </InfoRow>
+            <InfoRow label="Issued by">
+              <CopyableValue
+                value={formatPractitionerId(record.issuedBy.practitionerId)}
+                display={`${record.issuedBy.fullName} (${formatPractitionerId(record.issuedBy.practitionerId)})`}
+              />
+            </InfoRow>
+            <InfoRow label="Organisation">{record.issuedBy.organizationName}</InfoRow>
             <InfoRow label="Encrypted file hash">
               <CopyableValue
                 value={record.encryptedFileHash}

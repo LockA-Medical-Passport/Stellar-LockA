@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Select } from "@/components/ui/Select";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import {
   RECORD_TYPE_LABELS,
   RECORD_TYPE_OPTIONS,
@@ -26,7 +26,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function IssuedRecordsView() {
-  const { records, refresh, isVerified } = useProviderData();
+  const { records, refresh, canPractise } = usePractitionerData();
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [status, setStatus] = useState("all");
@@ -49,13 +49,13 @@ export function IssuedRecordsView() {
     <div className="animate-fade-in space-y-6">
       <PageHeader
         title="Issued records"
-        description="Records your organisation has written to a patient passport."
+        description="Records you have issued to a patient passport, each stamped with your practitioner id."
         action={
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={refresh}>
               Refresh
             </Button>
-            {isVerified && (
+            {canPractise && (
               <LinkButton href="/records/new" size="sm">
                 Add record
               </LinkButton>
@@ -103,7 +103,7 @@ export function IssuedRecordsView() {
                 : "Try a different category, status, or search term."
             }
             action={
-              records.length === 0 && isVerified ? (
+              records.length === 0 && canPractise ? (
                 <LinkButton href="/records/new">Add record</LinkButton>
               ) : undefined
             }

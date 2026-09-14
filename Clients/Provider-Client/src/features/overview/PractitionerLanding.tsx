@@ -9,15 +9,15 @@ import { networkLabel } from "@/lib/config";
 const CAPABILITIES = [
   {
     title: "Ask, don't chase",
-    body: "Request one record category for one window. The patient sees who is asking, what would open, and why, then decides.",
+    body: "Request one record category for one window. The patient sees your name, your role, your organisation, and your reason, then decides.",
   },
   {
     title: "History you can rely on",
     body: "Read allergies, diagnoses, prescriptions, lab results, and vaccination records the patient already holds, instead of repeating tests.",
   },
   {
-    title: "Issue verifiable records",
-    body: "Write a record against a passport and anchor its hash, so any later provider can prove the document is the one you issued.",
+    title: "Sign what you issue",
+    body: "Every result you write carries the practitioner id the registry minted for you, so a patient can trace it back to you years later.",
   },
   {
     title: "Checkable documents",
@@ -28,13 +28,13 @@ const CAPABILITIES = [
 const STEPS = [
   {
     step: "01",
-    title: "Register your organisation",
-    body: "Submit your name, category, country, and a licence commitment. Only the hash of the licence number reaches the registry.",
+    title: "Register yourself",
+    body: "Submit your full government name, your practising licence number, and the organisation you work with. The registry mints your practitioner id from them.",
   },
   {
     step: "02",
-    title: "Get verified",
-    body: "An administrator reviews the submission and verifies the organisation in the provider registry.",
+    title: "Start immediately",
+    body: "Registration is approved automatically for now, so you can work as soon as it lands. Administrator review of licence details comes later.",
   },
   {
     step: "03",
@@ -44,11 +44,11 @@ const STEPS = [
   {
     step: "04",
     title: "Read and write within scope",
-    body: "Read what the grant covers, add records while it is open, and hand access back when the episode of care ends.",
+    body: "Read what the grant covers, issue records while it is open, and hand access back when the episode of care ends.",
   },
 ];
 
-export function ProviderLanding() {
+export function PractitionerLanding() {
   const { connecting, connect } = useWallet();
 
   return (
@@ -61,15 +61,16 @@ export function ProviderLanding() {
               Running on {networkLabel}
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Patient history,{" "}
+              Your practice,{" "}
               <span className="bg-gradient-to-r from-locka-cyan to-brand-blue bg-clip-text text-transparent">
-                with consent attached
+                on the record
               </span>
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-relaxed text-foreground/60 sm:text-base">
-              The LockA provider portal is how hospitals, clinics, laboratories, pharmacies, and
-              insurers ask for the records they need, read only what the patient approved, and issue
-              records other providers can verify.
+              The LockA practitioner portal is how a doctor, nurse, midwife, pharmacist, laboratory
+              scientist, radiographer, physiotherapist, or dentist asks for the records they need,
+              reads only what the patient approved, and issues results that carry their own
+              practitioner id.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Button size="lg" loading={connecting} onClick={connect}>
@@ -127,9 +128,9 @@ export function ProviderLanding() {
       <section className="glass rounded-2xl p-6">
         <h2 className="text-sm font-semibold text-foreground">What you are accountable for</h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-foreground/60">
-          Requests are public to the patient and logged against your account: who asked, what was
-          asked for, and why. Ask for the minimum the episode of care needs, and hand access back
-          when it ends.
+          Requests and records are logged against your practitioner id, not your
+          organisation&apos;s: who asked, what was asked for, why, and what was issued. Ask for the
+          minimum the episode of care needs, and hand access back when it ends.
         </p>
       </section>
     </div>

@@ -1,12 +1,12 @@
 "use client";
 
-import { ProviderGate } from "@/features/provider/ProviderGate";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
 import { IssuedRecordsView } from "@/features/records/IssuedRecordsView";
 
 export default function IssuedRecordsPage() {
   return (
-    <ProviderGate>
+    <PractitionerGate>
       <IssuedRecordsView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }

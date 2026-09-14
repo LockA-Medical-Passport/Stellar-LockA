@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { RECORD_SCOPE_LABELS, formatPassportId } from "@/lib/domain";
 import { formatDateTime, formatRelative, pluralize } from "@/lib/format";
 
@@ -17,19 +17,19 @@ import { formatDateTime, formatRelative, pluralize } from "@/lib/format";
  * not a patient this organisation has any view of.
  */
 export function PatientsView() {
-  const { liveGrants, patientRecords, refresh, isVerified } = useProviderData();
+  const { liveGrants, patientRecords, refresh, canPractise } = usePractitionerData();
 
   return (
     <div className="animate-fade-in space-y-6">
       <PageHeader
         title="Patients"
-        description="Passports with an open grant for your organisation. Access closes on its own when the window ends."
+        description="Passports with an open grant for you. Access closes on its own when the window ends."
         action={
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={refresh}>
               Refresh
             </Button>
-            {isVerified && (
+            {canPractise && (
               <LinkButton href="/access/new" size="sm">
                 Request access
               </LinkButton>
@@ -44,7 +44,7 @@ export function PatientsView() {
             title="No open grants"
             description="You cannot read any patient's records right now. Request access with a passport id and wait for the patient to approve it."
             action={
-              isVerified ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
+              canPractise ? <LinkButton href="/access/new">Request access</LinkButton> : undefined
             }
           />
         </Card>

@@ -1,18 +1,20 @@
 import {
   formatPassportId,
+  formatPractitionerId,
   type AccessRequest,
   type MedicalRecord,
+  type Practitioner,
   type RecordStatus,
 } from "../domain";
 import type {
   AddRecordInput,
   PassportLookup,
-  ProviderClient,
-  RegisterProviderInput,
+  PractitionerClient,
+  RegisterPractitionerInput,
   RequestAccessInput,
   TxResult,
 } from "../locka-client";
-import { DEMO_PASSPORTS, hash32, ledger, recordEvent } from "./ledger";
+import { DEMO_PASSPORTS, hash32, ledger, recordEvent, refOf } from "./ledger";
 
 /** Stands in for network round-trips so loading states are exercised. */
 function settle<T>(value: T, ms = 320): Promise<T> {
@@ -40,35 +42,45 @@ function isLiveGrant(request: AccessRequest): boolean {
   return request.status === "Approved" && request.expiresAt > nowSeconds();
 }
 
-export const demoProviderClient: ProviderClient = {
-  async getProvider(address: string) {
-    const { provider } = ledger();
-    return settle(provider?.providerId === address ? provider : null);
+export const demoPractitionerClient: PractitionerClient = {
+  async getPractitioner(address: string) {
+    const { practitioner } = ledger();
+    return settle(practitioner?.walletAddress === address ? practitioner : null);
   },
 
-  async registerProvider(input: RegisterProviderInput) {
+  async registerPractitioner(input: RegisterPractitionerInput) {
     const state = ledger();
-    const provider = {
-      providerId: input.address,
-      name: input.name,
-      providerType: input.providerType,
-      country: input.country,
+
+    // The registry mints the id from the submitted details, and it is what gets
+    // stamped on every record and request from here on.
+    const practitioner: Practitioner = {
+      practitionerId: state.nextPractitionerId,
+      walletAddress: input.address,
+      fullName: input.fullName,
+      role: input.role,
+      licenseNumber: input.licenseNumber,
       licenseHash: input.licenseHash,
-      status: "Pending" as const,
+      organizationName: input.organizationName,
+      organizationType: input.organizationType,
+      country: input.country,
+      // Auto-approved for now. Administrator review slots in here later.
+      status: "Verified",
       registeredAt: nowSeconds(),
     };
-    state.provider = provider;
+    state.nextPractitionerId += 1;
+    state.practitioner = practitioner;
+
     const txHash = recordEvent(
-      "ProviderRegistered",
-      input.name,
-      `${input.name} registered and is awaiting verification`,
+      "PractitionerRegistered",
+      practitioner.fullName,
+      `Registered as ${formatPractitionerId(practitioner.practitionerId)} at ${practitioner.organizationName}`,
     );
-    return settle({ provider, txHash }, 900);
+    return settle({ practitioner, txHash }, 900);
   },
 
-  async listAccessRequests(providerId: string) {
+  async listAccessRequests(practitionerId: number) {
     const requests = ledger()
-      .accessRequests.filter((request) => request.providerId === providerId)
+      .accessRequests.filter((request) => request.requestedBy.practitionerId === practitionerId)
       .map(withExpiry)
       .sort((a, b) => b.requestedAt - a.requestedAt);
     return settle(requests);
@@ -76,9 +88,10 @@ export const demoProviderClient: ProviderClient = {
 
   async requestAccess(input: RequestAccessInput) {
     const state = ledger();
-    if (!state.provider) throw new Error("Register as a provider before requesting access.");
-    if (state.provider.status !== "Verified") {
-      throw new Error("Only verified providers can request patient access.");
+    if (!state.practitioner)
+      throw new Error("Register as a practitioner before requesting access.");
+    if (state.practitioner.status !== "Verified") {
+      throw new Error("This registration cannot request patient access.");
     }
     if (!DEMO_PASSPORTS.some((entry) => entry.passportId === input.passportId)) {
       throw new Error("No passport exists with that id.");
@@ -87,9 +100,7 @@ export const demoProviderClient: ProviderClient = {
     const request: AccessRequest = {
       accessId: state.nextAccessId,
       passportId: input.passportId,
-      providerId: input.providerId,
-      providerName: state.provider.name,
-      providerType: state.provider.providerType,
+      requestedBy: refOf(state.practitioner),
       recordScope: input.recordScope,
       durationSeconds: input.durationSeconds,
       purpose: input.purpose,
@@ -102,7 +113,7 @@ export const demoProviderClient: ProviderClient = {
 
     const txHash = recordEvent(
       "AccessRequested",
-      state.provider.name,
+      state.practitioner.fullName,
       `Requested access to ${formatPassportId(input.passportId)}`,
     );
     return settle({ request, txHash }, 900);
@@ -117,24 +128,24 @@ export const demoProviderClient: ProviderClient = {
     request.expiresAt = nowSeconds();
     const txHash = recordEvent(
       "AccessRevoked",
-      state.provider?.name ?? "Provider",
+      state.practitioner?.fullName ?? "Practitioner",
       `Handed back access to ${formatPassportId(request.passportId)}`,
     );
     return settle({ txHash }, 900);
   },
 
-  async listIssuedRecords(providerId: string) {
+  async listIssuedRecords(practitionerId: number) {
     const records = ledger()
-      .records.filter((record) => record.providerId === providerId)
+      .records.filter((record) => record.issuedBy.practitionerId === practitionerId)
       .sort((a, b) => b.issuedAt - a.issuedAt);
     return settle(records);
   },
 
   async addRecord(input: AddRecordInput) {
     const state = ledger();
-    if (!state.provider) throw new Error("Register as a provider before adding records.");
-    if (state.provider.status !== "Verified") {
-      throw new Error("Only verified providers can add records to a passport.");
+    if (!state.practitioner) throw new Error("Register as a practitioner before adding records.");
+    if (state.practitioner.status !== "Verified") {
+      throw new Error("This registration cannot add records to a passport.");
     }
 
     const grant = state.accessRequests
@@ -149,8 +160,9 @@ export const demoProviderClient: ProviderClient = {
     const record: MedicalRecord = {
       recordId: hash32(`record:${input.passportId}:${input.title}:${nowSeconds()}`),
       passportId: input.passportId,
-      providerId: input.providerId,
-      providerName: state.provider.name,
+      // The practitioner id is stamped here, so the patient can always trace the
+      // result back to the person who issued it.
+      issuedBy: refOf(state.practitioner),
       recordType: input.recordType,
       title: input.title,
       encryptedFileHash: input.encryptedFileHash,
@@ -162,8 +174,8 @@ export const demoProviderClient: ProviderClient = {
 
     const txHash = recordEvent(
       "RecordAdded",
-      state.provider.name,
-      `${input.title} added for ${formatPassportId(input.passportId)}`,
+      state.practitioner.fullName,
+      `${input.title} issued to ${formatPassportId(input.passportId)}`,
     );
     return settle({ record, txHash }, 900);
   },
@@ -180,7 +192,7 @@ export const demoProviderClient: ProviderClient = {
     record.status = status;
     const txHash = recordEvent(
       status === "Amended" ? "RecordAmended" : "RecordRevoked",
-      state.provider?.name ?? "Provider",
+      state.practitioner?.fullName ?? "Practitioner",
       `${record.title} marked ${status.toLowerCase()}`,
     );
     return settle({ txHash }, 900);
@@ -197,10 +209,14 @@ export const demoProviderClient: ProviderClient = {
     return settle(match, 500);
   },
 
-  async listPatientRecords(providerId: string, passportId: number) {
+  async listPatientRecords(practitionerId: number, passportId: number) {
     const state = ledger();
     const grant = state.accessRequests
-      .filter((request) => request.providerId === providerId && request.passportId === passportId)
+      .filter(
+        (request) =>
+          request.requestedBy.practitionerId === practitionerId &&
+          request.passportId === passportId,
+      )
       .find(isLiveGrant);
     if (!grant) return settle<MedicalRecord[]>([]);
 

@@ -14,11 +14,31 @@ export type PassportStatus = "Active" | "Suspended" | "Revoked";
 /** `provider-registry::ProviderStatus` */
 export type ProviderStatus = "Pending" | "Verified" | "Suspended" | "Revoked";
 
-/** `provider-registry::ProviderType` */
-export type ProviderType =
+/**
+ * The clinical role of the individual holding the registration.
+ *
+ * A LockA provider is a person, not a building: the doctor who wrote the note,
+ * the pharmacist who dispensed the drug, the scientist who ran the assay. The
+ * organisation they work under is recorded separately, as `OrganizationType`.
+ *
+ * `provider-registry` currently carries a single `ProviderType` enum that mixes
+ * individuals and institutions. Splitting it into these two is the contract
+ * change this model expects.
+ */
+export type PractitionerRole =
+  | "Doctor"
+  | "Nurse"
+  | "Midwife"
+  | "Pharmacist"
+  | "LaboratoryScientist"
+  | "Radiographer"
+  | "Physiotherapist"
+  | "Dentist";
+
+/** The kind of organisation a practitioner practises under. */
+export type OrganizationType =
   | "Hospital"
   | "Clinic"
-  | "Doctor"
   | "Laboratory"
   | "Pharmacy"
   | "InsuranceCompany"
@@ -67,23 +87,56 @@ export interface Passport {
   recoveryAddress: string | null;
 }
 
-export interface Provider {
-  /** Providers are addressed by their Stellar account in the contracts. */
-  providerId: string;
-  name: string;
-  providerType: ProviderType;
-  country: string;
+/**
+ * A registered individual practitioner.
+ *
+ * The registry mints `practitionerId` from the details submitted at
+ * registration, and that id is what gets stamped on everything the practitioner
+ * issues. The identifying details themselves stay off-chain with locka-api,
+ * under the platform's rule that no personally identifiable information is
+ * written to a public ledger: the chain holds the id, the licence commitment,
+ * and the status.
+ */
+export interface Practitioner {
+  /** `u64` id minted by the provider registry, linked to the details below. */
+  practitionerId: number;
+  /** Stellar account holding the registration and signing its writes. */
+  walletAddress: string;
+  /** Full government name, as it appears on the practising licence. */
+  fullName: string;
+  role: PractitionerRole;
+  /** Licence number, checkable against the issuing council's register. */
+  licenseNumber: string;
+  /** `BytesN<32>` commitment to the licence number, anchored on-chain. */
   licenseHash: string;
+  /** The hospital, clinic, laboratory, or pharmacy they practise under. */
+  organizationName: string;
+  organizationType: OrganizationType;
+  country: string;
   status: ProviderStatus;
   registeredAt: number;
+}
+
+/**
+ * The practitioner stamp carried by everything issued to a patient.
+ *
+ * A record or a request without one cannot be traced back to a person, so this
+ * travels with both. It is a snapshot taken at issue time, which is what keeps
+ * a record attributable to who signed it even after they move organisation.
+ */
+export interface PractitionerRef {
+  practitionerId: number;
+  fullName: string;
+  role: PractitionerRole;
+  organizationName: string;
 }
 
 export interface MedicalRecord {
   /** `BytesN<32>` record id. */
   recordId: string;
   passportId: number;
-  providerId: string;
-  providerName: string;
+  /** The practitioner who issued it, stamped at issue time. */
+  issuedBy: PractitionerRef;
   recordType: RecordType;
   title: string;
   /** Hash of the encrypted document held in the off-chain vault. */
@@ -98,13 +151,12 @@ export interface AccessRequest {
   /** `u64` id minted by the consent manager. */
   accessId: number;
   passportId: number;
-  providerId: string;
-  providerName: string;
-  providerType: ProviderType;
+  /** The practitioner asking, so the patient knows who they are consenting to. */
+  requestedBy: PractitionerRef;
   recordScope: RecordScope;
-  /** Access window the provider asked for, in seconds. */
+  /** Access window the practitioner asked for, in seconds. */
   durationSeconds: number;
-  /** Free-text reason the provider gave for the request. */
+  /** Free-text reason the practitioner gave for the request. */
   purpose: string;
   status: AccessStatus;
   requestedAt: number;
@@ -115,8 +167,7 @@ export interface AccessRequest {
 export type AuditEventKind =
   | "PassportCreated"
   | "RecoveryUpdated"
-  | "ProviderRegistered"
-  | "ProviderVerified"
+  | "PractitionerRegistered"
   | "AccessRequested"
   | "AccessApproved"
   | "AccessRejected"
@@ -129,7 +180,7 @@ export type AuditEventKind =
 export interface AuditEvent {
   id: string;
   kind: AuditEventKind;
-  /** Who caused the event: a provider name, or "You" for patient actions. */
+  /** Who caused the event: a practitioner, or "You" for the account's own actions. */
   actor: string;
   summary: string;
   /** Stellar transaction that carried the event. */
@@ -146,16 +197,26 @@ export const PASSPORT_STATUS_LABELS: Record<PassportStatus, string> = {
 };
 
 export const PROVIDER_STATUS_LABELS: Record<ProviderStatus, string> = {
-  Pending: "Pending verification",
-  Verified: "Verified",
+  Pending: "Pending review",
+  Verified: "Registered",
   Suspended: "Suspended",
   Revoked: "Revoked",
 };
 
-export const PROVIDER_TYPE_LABELS: Record<ProviderType, string> = {
+export const PRACTITIONER_ROLE_LABELS: Record<PractitionerRole, string> = {
+  Doctor: "Doctor",
+  Nurse: "Nurse",
+  Midwife: "Midwife",
+  Pharmacist: "Pharmacist",
+  LaboratoryScientist: "Laboratory scientist",
+  Radiographer: "Radiographer",
+  Physiotherapist: "Physiotherapist",
+  Dentist: "Dentist",
+};
+
+export const ORGANIZATION_TYPE_LABELS: Record<OrganizationType, string> = {
   Hospital: "Hospital",
   Clinic: "Clinic",
-  Doctor: "Doctor",
   Laboratory: "Laboratory",
   Pharmacy: "Pharmacy",
   InsuranceCompany: "Insurance company",
@@ -209,8 +270,7 @@ export const RECORD_SCOPE_DESCRIPTIONS: Record<RecordScope, string> = {
 export const AUDIT_EVENT_LABELS: Record<AuditEventKind, string> = {
   PassportCreated: "Passport created",
   RecoveryUpdated: "Recovery address updated",
-  ProviderRegistered: "Provider registered",
-  ProviderVerified: "Provider verified",
+  PractitionerRegistered: "Practitioner registered",
   AccessRequested: "Access requested",
   AccessApproved: "Access approved",
   AccessRejected: "Access rejected",
@@ -227,7 +287,8 @@ function toOptions<T extends string>(labels: Record<T, string>) {
   return (Object.keys(labels) as T[]).map((value) => ({ value, label: labels[value] }));
 }
 
-export const PROVIDER_TYPE_OPTIONS = toOptions(PROVIDER_TYPE_LABELS);
+export const PRACTITIONER_ROLE_OPTIONS = toOptions(PRACTITIONER_ROLE_LABELS);
+export const ORGANIZATION_TYPE_OPTIONS = toOptions(ORGANIZATION_TYPE_LABELS);
 export const RECORD_TYPE_OPTIONS = toOptions(RECORD_TYPE_LABELS);
 export const RECORD_SCOPE_OPTIONS = toOptions(RECORD_SCOPE_LABELS);
 
@@ -260,15 +321,40 @@ export const ACCESS_STATUS_VARIANTS: Record<AccessStatus, BadgeVariant> = {
   Expired: "gray",
 };
 
-/** A passport id is displayed with a `LP-` prefix so it reads as an identifier. */
+// ── Identifier formatting ─────────────────────────────────────────────────
+
+/** A passport id is displayed with an `LP-` prefix so it reads as an identifier. */
 export function formatPassportId(passportId: number): string {
   return `LP-${String(passportId).padStart(6, "0")}`;
 }
 
 /** Accepts either the raw `u64` or the displayed `LP-000000` form. */
 export function parsePassportId(input: string): number | null {
-  const digits = input.trim().replace(/^LP-/i, "");
+  return parsePrefixedId(input, "LP");
+}
+
+/**
+ * The practitioner id the registry mints at registration. It is stamped on every
+ * record and every access request, so a patient can always trace a result back
+ * to the person who issued it.
+ */
+export function formatPractitionerId(practitionerId: number): string {
+  return `PR-${String(practitionerId).padStart(6, "0")}`;
+}
+
+/** Accepts either the raw `u64` or the displayed `PR-000000` form. */
+export function parsePractitionerId(input: string): number | null {
+  return parsePrefixedId(input, "PR");
+}
+
+function parsePrefixedId(input: string, prefix: string): number | null {
+  const digits = input.trim().replace(new RegExp(`^${prefix}-`, "i"), "");
   if (!/^\d{1,19}$/.test(digits)) return null;
   const value = Number(digits);
   return Number.isSafeInteger(value) ? value : null;
+}
+
+/** "Dr Amara Nwosu · PR-000142 · Lagos General Hospital" */
+export function describePractitioner(ref: PractitionerRef): string {
+  return `${ref.fullName} · ${formatPractitionerId(ref.practitionerId)} · ${ref.organizationName}`;
 }

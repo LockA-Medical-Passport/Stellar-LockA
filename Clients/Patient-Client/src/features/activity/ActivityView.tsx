@@ -16,8 +16,7 @@ import type { BadgeVariant } from "@/components/ui/Badge";
 const KIND_VARIANTS: Record<AuditEventKind, BadgeVariant> = {
   PassportCreated: "cyan",
   RecoveryUpdated: "cyan",
-  ProviderRegistered: "cyan",
-  ProviderVerified: "green",
+  PractitionerRegistered: "cyan",
   AccessRequested: "amber",
   AccessApproved: "green",
   AccessRejected: "red",

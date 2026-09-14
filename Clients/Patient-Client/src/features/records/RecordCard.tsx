@@ -2,14 +2,16 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
-import { CopyableValue } from "@/components/ui/CopyableValue";
 import { InfoGrid, InfoRow } from "@/components/ui/Card";
+import { CopyableValue } from "@/components/ui/CopyableValue";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { formatDate } from "@/lib/format";
 import {
+  PRACTITIONER_ROLE_LABELS,
   RECORD_STATUS_LABELS,
   RECORD_STATUS_VARIANTS,
   RECORD_TYPE_LABELS,
+  formatPractitionerId,
   type MedicalRecord,
 } from "@/lib/domain";
 import { shortHash } from "@/lib/stellar";
@@ -36,14 +38,26 @@ export function RecordCard({ record, defaultOpen = false, className }: RecordCar
               {RECORD_TYPE_LABELS[record.recordType]}
             </Badge>
           </div>
-          <p className="mt-1 text-xs text-foreground/50">
-            {record.providerName} · {formatDate(record.issuedAt)}
-          </p>
+          <p className="mt-1 text-xs text-foreground/50">{formatDate(record.issuedAt)}</p>
         </div>
         <Badge variant={RECORD_STATUS_VARIANTS[record.status]}>
           {RECORD_STATUS_LABELS[record.status]}
         </Badge>
       </div>
+
+      {/* Who signed this. The practitioner id is stamped at issue time, so it
+          stays accurate even after they move organisation. */}
+      <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-foreground/60">
+        <span className="font-medium text-foreground/80">{record.issuedBy.fullName}</span>
+        <span aria-hidden="true">·</span>
+        <span>{PRACTITIONER_ROLE_LABELS[record.issuedBy.role]}</span>
+        <span aria-hidden="true">·</span>
+        <span className="font-mono text-locka-cyan">
+          {formatPractitionerId(record.issuedBy.practitionerId)}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>{record.issuedBy.organizationName}</span>
+      </p>
 
       <button
         type="button"
@@ -74,8 +88,11 @@ export function RecordCard({ record, defaultOpen = false, className }: RecordCar
             <InfoRow label="Record id">
               <CopyableValue value={record.recordId} display={shortHash(record.recordId)} />
             </InfoRow>
-            <InfoRow label="Issuing provider">
-              <CopyableValue value={record.providerId} display={`${record.providerName}`} />
+            <InfoRow label="Issued by">
+              <CopyableValue
+                value={formatPractitionerId(record.issuedBy.practitionerId)}
+                display={`${record.issuedBy.fullName} (${formatPractitionerId(record.issuedBy.practitionerId)})`}
+              />
             </InfoRow>
             <InfoRow label="Encrypted file hash">
               <CopyableValue

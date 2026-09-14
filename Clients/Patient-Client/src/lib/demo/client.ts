@@ -112,7 +112,11 @@ export const demoPatientClient: PatientClient = {
           : "AccessRevoked";
     const verb =
       decision === "approve" ? "approved" : decision === "reject" ? "rejected" : "revoked";
-    const txHash = recordEvent(kind, "You", `You ${verb} access for ${request.providerName}`);
+    const txHash = recordEvent(
+      kind,
+      "You",
+      `You ${verb} access for ${request.requestedBy.fullName}`,
+    );
     return settle({ txHash }, 900);
   },
 

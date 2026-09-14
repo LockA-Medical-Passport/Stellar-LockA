@@ -1,30 +1,30 @@
 "use client";
 
 import { Callout } from "@/components/ui/Callout";
-import { ProviderLanding } from "@/features/overview/ProviderLanding";
-import { ProviderOverview } from "@/features/overview/ProviderOverview";
-import { LoadingPanel, NotRegisteredPrompt } from "@/features/provider/ProviderGate";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { PractitionerLanding } from "@/features/overview/PractitionerLanding";
+import { PractitionerOverview } from "@/features/overview/PractitionerOverview";
+import { LoadingPanel, NotRegisteredPrompt } from "@/features/practitioner/PractitionerGate";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { useWallet } from "@/features/wallet/WalletContext";
 
 export default function OverviewPage() {
   const { address } = useWallet();
-  const { loading, error, provider } = useProviderData();
+  const { loading, error, practitioner } = usePractitionerData();
 
   // Checked before `loading` on purpose: this is the portal's front door, so it
   // renders on the server rather than behind a restore skeleton.
-  if (!address) return <ProviderLanding />;
+  if (!address) return <PractitionerLanding />;
   if (loading) return <LoadingPanel />;
 
   if (error) {
     return (
-      <Callout tone="danger" title="Could not read your organisation">
+      <Callout tone="danger" title="Could not read your registration">
         {error}
       </Callout>
     );
   }
 
-  if (!provider) return <NotRegisteredPrompt />;
+  if (!practitioner) return <NotRegisteredPrompt />;
 
-  return <ProviderOverview provider={provider} />;
+  return <PractitionerOverview practitioner={practitioner} />;
 }

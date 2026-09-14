@@ -1,12 +1,12 @@
 "use client";
 
 import { PatientDetail } from "@/features/patients/PatientDetail";
-import { ProviderGate } from "@/features/provider/ProviderGate";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
 
 export function PatientDetailScreen({ passportId }: { passportId: number }) {
   return (
-    <ProviderGate>
+    <PractitionerGate>
       <PatientDetail passportId={passportId} />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }

@@ -198,3 +198,12 @@ export function PlusIcon() {
     </svg>
   );
 }
+
+export function UserIcon() {
+  return (
+    <svg {...iconProps()}>
+      <circle cx="10" cy="6.75" r="3" />
+      <path d="M3.75 17.25a6.25 6.25 0 0 1 12.5 0" />
+    </svg>
+  );
+}

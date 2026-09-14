@@ -11,7 +11,7 @@ export interface ConnectPromptProps {
 /** Shown wherever a screen needs a connected wallet before it can read anything. */
 export function ConnectPrompt({
   title = "Connect your wallet",
-  description = "Your organisation is identified on the network by its Stellar account. Connect it to request patient access and issue records.",
+  description = "Your registration is held under a Stellar account, and that account signs everything you issue. Connect it to request patient access and issue records.",
 }: ConnectPromptProps) {
   const { connecting, connect } = useWallet();
 

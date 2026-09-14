@@ -6,47 +6,52 @@ import { LinkButton } from "@/components/ui/LinkButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ConnectPrompt } from "@/features/wallet/ConnectPrompt";
 import { useWallet } from "@/features/wallet/WalletContext";
-import { useProviderData } from "./useProviderData";
+import { PROVIDER_STATUS_LABELS } from "@/lib/domain";
+import { usePractitionerData } from "./usePractitionerData";
 
-export interface ProviderGateProps {
+export interface PractitionerGateProps {
   children: ReactNode;
   /**
-   * Screens that write to a patient's passport need a verified provider, not
-   * just a registered one.
+   * Screens that touch a patient's passport need a registration in good
+   * standing, not merely one that exists.
    */
-  requireVerified?: boolean;
+  requirePractising?: boolean;
 }
 
 /**
- * Wraps the screens that need a wallet and a registered organisation, so each
- * page can assume `provider` is present rather than repeating the empty states.
+ * Wraps the screens that need a wallet and a registered practitioner, so each
+ * page can assume `practitioner` is present rather than repeating the empty
+ * states.
  */
-export function ProviderGate({ children, requireVerified = false }: ProviderGateProps) {
+export function PractitionerGate({ children, requirePractising = false }: PractitionerGateProps) {
   const { address } = useWallet();
-  const { loading, error, provider, isVerified } = useProviderData();
+  const { loading, error, practitioner, canPractise } = usePractitionerData();
 
   if (loading) return <LoadingPanel />;
   if (!address) return <ConnectPrompt />;
 
   if (error) {
     return (
-      <Callout tone="danger" title="Could not read your organisation">
+      <Callout tone="danger" title="Could not read your registration">
         {error}
       </Callout>
     );
   }
 
-  if (!provider) return <NotRegisteredPrompt />;
+  if (!practitioner) return <NotRegisteredPrompt />;
 
-  if (requireVerified && !isVerified) {
+  if (requirePractising && !canPractise) {
     return (
       <div className="space-y-4">
-        <Callout tone="warning" title="Awaiting verification">
-          An administrator has to verify {provider.name} before it can request patient access or
-          write records. Your registration is on the network and in the review queue.
+        <Callout
+          tone="danger"
+          title={`Registration ${PROVIDER_STATUS_LABELS[practitioner.status].toLowerCase()}`}
+        >
+          This registration cannot request patient access or issue records. Contact a LockA
+          administrator to resolve it.
         </Callout>
         <LinkButton href="/profile" variant="secondary">
-          View organisation profile
+          View my registration
         </LinkButton>
       </div>
     );
@@ -82,20 +87,20 @@ export function NotRegisteredPrompt() {
           strokeLinejoin="round"
           aria-hidden="true"
         >
-          <rect x="3.75" y="2.75" width="11.5" height="18.5" rx="2" />
-          <path d="M15.25 8.5h5v12.75h-5" />
-          <path d="M7 6.75h1M11 6.75h1M7 10.75h1M11 10.75h1M7 14.75h1M11 14.75h1" />
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M4.75 20.25a7.25 7.25 0 0 1 14.5 0" />
         </svg>
       </span>
       <h2 className="text-lg font-semibold text-foreground">
-        This account is not a registered provider
+        This account holds no practitioner registration
       </h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-foreground/60">
-        Register your hospital, clinic, laboratory, pharmacy, or insurance organisation. An
-        administrator reviews the submission before you can request patient access.
+        Register as an individual practitioner: a doctor, nurse, midwife, pharmacist, laboratory
+        scientist, radiographer, physiotherapist, or dentist. The registry mints your practitioner
+        id, and that id is stamped on every result you issue.
       </p>
       <LinkButton href="/profile/register" className="mt-6">
-        Register organisation
+        Register as a practitioner
       </LinkButton>
     </div>
   );

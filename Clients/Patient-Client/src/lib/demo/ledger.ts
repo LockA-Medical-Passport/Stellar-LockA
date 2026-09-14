@@ -4,7 +4,7 @@ import type {
   AuditEventKind,
   MedicalRecord,
   Passport,
-  Provider,
+  PractitionerRef,
 } from "@/lib/domain";
 import { DEMO_PATIENT_ADDRESS } from "@/features/wallet/adapter";
 
@@ -41,53 +41,44 @@ function txHash(seed: string): string {
   return hash32(`tx:${seed}`).slice(2);
 }
 
-export const DEMO_PROVIDERS: Provider[] = [
-  {
-    providerId: "GCHOSPITALLAGOSGENERALPIQJRKSLTMUNVOWPXQYRZS2T3U4V5W6X7Y",
-    name: "Lagos General Hospital",
-    providerType: "Hospital",
-    country: "Nigeria",
-    licenseHash: hash32("license:lagos-general"),
-    status: "Verified",
-    registeredAt: 0,
+/**
+ * The practitioners in the sample data.
+ *
+ * A LockA provider is a person, not an institution: each entry is an individual
+ * with their own registry-minted id, practising under a named organisation.
+ */
+export const DEMO_PRACTITIONERS = {
+  surgeon: {
+    practitionerId: 142,
+    fullName: "Amara Chinelo Nwosu",
+    role: "Doctor",
+    organizationName: "Lagos General Hospital",
   },
-  {
-    providerId: "GCLABCEDARDIAGNOSTICSOIPJQKRLSMTNUOVPWQXRYSZT2U3V4W5X6Y7",
-    name: "Cedar Diagnostics",
-    providerType: "Laboratory",
-    country: "Nigeria",
-    licenseHash: hash32("license:cedar-diagnostics"),
-    status: "Verified",
-    registeredAt: 0,
+  labScientist: {
+    practitionerId: 208,
+    fullName: "Tobiloba Adeyemi Ogunleye",
+    role: "LaboratoryScientist",
+    organizationName: "Cedar Diagnostics",
   },
-  {
-    providerId: "GCPHARMACYGREENCROSSNIOJPKQLRMSNTOUPVQWRXSYTZU2V3W4X5Y6Z",
-    name: "Green Cross Pharmacy",
-    providerType: "Pharmacy",
-    country: "Nigeria",
-    licenseHash: hash32("license:green-cross"),
-    status: "Verified",
-    registeredAt: 0,
+  pharmacist: {
+    practitionerId: 316,
+    fullName: "Halima Sadiq Bello",
+    role: "Pharmacist",
+    organizationName: "Green Cross Pharmacy",
   },
-  {
-    providerId: "GCCLINICWESTBRIDGELIMJNKOLPMQNROSPTQURVSWTXUYVZW2X3Y4Z52",
-    name: "Westbridge Family Clinic",
-    providerType: "Clinic",
-    country: "Nigeria",
-    licenseHash: hash32("license:westbridge"),
-    status: "Verified",
-    registeredAt: 0,
+  gp: {
+    practitionerId: 77,
+    fullName: "Ifeoma Grace Okonkwo",
+    role: "Doctor",
+    organizationName: "Westbridge Family Clinic",
   },
-  {
-    providerId: "GCINSURERSENTINELHEALTHQIRJSKTLUMVNWOXPYQZR2S3T4U5V6W7XA",
-    name: "Sentinel Health Cover",
-    providerType: "InsuranceCompany",
-    country: "Nigeria",
-    licenseHash: hash32("license:sentinel"),
-    status: "Verified",
-    registeredAt: 0,
+  midwife: {
+    practitionerId: 251,
+    fullName: "Ngozi Blessing Eze",
+    role: "Midwife",
+    organizationName: "Westbridge Family Clinic",
   },
-];
+} satisfies Record<string, PractitionerRef>;
 
 export interface DemoState {
   passport: Passport | null;
@@ -102,7 +93,7 @@ let state: DemoState | null = null;
 
 function seed(): DemoState {
   const now = Math.floor(Date.now() / 1000);
-  const [hospital, lab, pharmacy, clinic, insurer] = DEMO_PROVIDERS;
+  const { surgeon, labScientist, pharmacist, gp, midwife } = DEMO_PRACTITIONERS;
 
   const passport: Passport = {
     passportId: 10427,
@@ -117,8 +108,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:full-blood-count"),
       passportId: passport.passportId,
-      providerId: lab.providerId,
-      providerName: lab.name,
+      issuedBy: labScientist,
       recordType: "LabResult",
       title: "Full blood count",
       encryptedFileHash: hash32("file:full-blood-count"),
@@ -129,8 +119,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:hypertension-review"),
       passportId: passport.passportId,
-      providerId: clinic.providerId,
-      providerName: clinic.name,
+      issuedBy: gp,
       recordType: "Diagnosis",
       title: "Hypertension follow-up",
       encryptedFileHash: hash32("file:hypertension-review"),
@@ -141,8 +130,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:amlodipine"),
       passportId: passport.passportId,
-      providerId: pharmacy.providerId,
-      providerName: pharmacy.name,
+      issuedBy: pharmacist,
       recordType: "Prescription",
       title: "Amlodipine 5mg, 30 days",
       encryptedFileHash: hash32("file:amlodipine"),
@@ -153,8 +141,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:penicillin-allergy"),
       passportId: passport.passportId,
-      providerId: hospital.providerId,
-      providerName: hospital.name,
+      issuedBy: surgeon,
       recordType: "AllergyRecord",
       title: "Penicillin allergy — anaphylaxis risk",
       encryptedFileHash: hash32("file:penicillin-allergy"),
@@ -165,8 +152,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:yellow-fever"),
       passportId: passport.passportId,
-      providerId: hospital.providerId,
-      providerName: hospital.name,
+      issuedBy: midwife,
       recordType: "Vaccination",
       title: "Yellow fever vaccination",
       encryptedFileHash: hash32("file:yellow-fever"),
@@ -177,8 +163,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:lipid-panel"),
       passportId: passport.passportId,
-      providerId: lab.providerId,
-      providerName: lab.name,
+      issuedBy: labScientist,
       recordType: "LabResult",
       title: "Lipid panel (superseded)",
       encryptedFileHash: hash32("file:lipid-panel"),
@@ -189,8 +174,7 @@ function seed(): DemoState {
     {
       recordId: hash32("record:discharge-summary"),
       passportId: passport.passportId,
-      providerId: hospital.providerId,
-      providerName: hospital.name,
+      issuedBy: surgeon,
       recordType: "MedicalSummary",
       title: "Discharge summary — day surgery",
       encryptedFileHash: hash32("file:discharge-summary"),
@@ -204,9 +188,7 @@ function seed(): DemoState {
     {
       accessId: 5104,
       passportId: passport.passportId,
-      providerId: hospital.providerId,
-      providerName: hospital.name,
-      providerType: hospital.providerType,
+      requestedBy: surgeon,
       recordScope: "EmergencySummaryOnly",
       durationSeconds: 24 * HOUR,
       purpose: "Pre-operative assessment ahead of scheduled surgery on Thursday.",
@@ -217,12 +199,10 @@ function seed(): DemoState {
     {
       accessId: 5103,
       passportId: passport.passportId,
-      providerId: insurer.providerId,
-      providerName: insurer.name,
-      providerType: insurer.providerType,
-      recordScope: "InsuranceDataOnly",
+      requestedBy: midwife,
+      recordScope: "VaccinationRecordsOnly",
       durationSeconds: 7 * DAY,
-      purpose: "Verifying cover for an outstanding claim reference SHC-88213.",
+      purpose: "Checking vaccination cover before an antenatal appointment.",
       status: "Pending",
       requestedAt: now - 2 * DAY,
       expiresAt: 0,
@@ -230,9 +210,7 @@ function seed(): DemoState {
     {
       accessId: 5098,
       passportId: passport.passportId,
-      providerId: clinic.providerId,
-      providerName: clinic.name,
-      providerType: clinic.providerType,
+      requestedBy: gp,
       recordScope: "AllRecords",
       durationSeconds: 30 * DAY,
       purpose: "Ongoing hypertension management and medication review.",
@@ -243,9 +221,7 @@ function seed(): DemoState {
     {
       accessId: 5095,
       passportId: passport.passportId,
-      providerId: lab.providerId,
-      providerName: lab.name,
-      providerType: lab.providerType,
+      requestedBy: labScientist,
       recordScope: "LabResultsOnly",
       durationSeconds: 24 * HOUR,
       purpose: "Uploading the full blood count requested by Westbridge Family Clinic.",
@@ -256,9 +232,7 @@ function seed(): DemoState {
     {
       accessId: 5081,
       passportId: passport.passportId,
-      providerId: pharmacy.providerId,
-      providerName: pharmacy.name,
-      providerType: pharmacy.providerType,
+      requestedBy: pharmacist,
       recordScope: "PrescriptionsOnly",
       durationSeconds: 30 * DAY,
       purpose: "Dispensing repeat medication.",
@@ -269,12 +243,10 @@ function seed(): DemoState {
     {
       accessId: 5074,
       passportId: passport.passportId,
-      providerId: insurer.providerId,
-      providerName: insurer.name,
-      providerType: insurer.providerType,
+      requestedBy: surgeon,
       recordScope: "AllRecords",
       durationSeconds: 30 * DAY,
-      purpose: "Underwriting review for a new policy.",
+      purpose: "Reviewing full history ahead of an elective procedure.",
       status: "Rejected",
       requestedAt: now - 88 * DAY,
       expiresAt: 0,
@@ -284,40 +256,50 @@ function seed(): DemoState {
   const auditEvents: AuditEvent[] = [
     event(
       "AccessRequested",
-      hospital.name,
-      `${hospital.name} requested emergency summary access`,
+      surgeon.fullName,
+      `${surgeon.fullName} requested emergency summary access`,
       now - 4 * HOUR,
     ),
-    event("RecordAdded", lab.name, "Full blood count added to your passport", now - 6 * DAY),
+    event(
+      "RecordAdded",
+      labScientist.fullName,
+      "Full blood count added to your passport",
+      now - 6 * DAY,
+    ),
     event(
       "AccessApproved",
       "You",
-      `You approved 24 hours of lab result access for ${lab.name}`,
+      `You approved 24 hours of lab result access for ${labScientist.fullName}`,
       now - 7 * DAY,
     ),
-    event("RecordAdded", pharmacy.name, "Amlodipine 5mg prescription recorded", now - 20 * DAY),
+    event(
+      "RecordAdded",
+      pharmacist.fullName,
+      "Amlodipine 5mg prescription recorded",
+      now - 20 * DAY,
+    ),
     event(
       "AccessApproved",
       "You",
-      `You approved 30 days of full access for ${clinic.name}`,
+      `You approved 30 days of full access for ${gp.fullName}`,
       now - 21 * DAY,
     ),
     event(
       "AccessRevoked",
       "You",
-      `You revoked prescription access for ${pharmacy.name}`,
+      `You revoked prescription access for ${pharmacist.fullName}`,
       now - 30 * DAY,
     ),
     event(
       "RecordAmended",
-      lab.name,
+      labScientist.fullName,
       "Lipid panel superseded by a corrected result",
       now - 90 * DAY,
     ),
     event(
       "AccessRejected",
       "You",
-      `You rejected a full-access request from ${insurer.name}`,
+      `You rejected a full-access request from ${surgeon.fullName}`,
       now - 88 * DAY,
     ),
     event("RecoveryUpdated", "You", "Recovery address updated", now - 120 * DAY),

@@ -11,9 +11,10 @@ import { usePassportData } from "@/features/passport/usePassportData";
 import {
   ACCESS_STATUS_LABELS,
   ACCESS_STATUS_VARIANTS,
-  PROVIDER_TYPE_LABELS,
+  PRACTITIONER_ROLE_LABELS,
   RECORD_SCOPE_DESCRIPTIONS,
   RECORD_SCOPE_LABELS,
+  formatPractitionerId,
   type AccessRequest,
 } from "@/lib/domain";
 import {
@@ -23,7 +24,6 @@ import {
   formatRelative,
 } from "@/lib/format";
 import { locka, type AccessDecision } from "@/lib/locka-client";
-import { shortAddress } from "@/lib/stellar";
 import { errorMessage } from "@/lib/utils";
 
 export interface AccessRequestCardProps {
@@ -31,14 +31,16 @@ export interface AccessRequestCardProps {
 }
 
 /**
- * One consent decision, with the facts a patient needs before making it: who is
- * asking, what they would see, for how long, and why.
+ * One consent decision, with the facts a patient needs before making it: which
+ * practitioner is asking, what they would see, for how long, and why.
  */
 export function AccessRequestCard({ request }: AccessRequestCardProps) {
   const { refresh } = usePassportData();
   const [busy, setBusy] = useState<AccessDecision | null>(null);
   const [approveOpen, setApproveOpen] = useState(false);
   const [accessWindow, setAccessWindow] = useState(String(request.durationSeconds));
+
+  const who = request.requestedBy;
 
   async function decide(decision: AccessDecision, durationSeconds?: number) {
     setBusy(decision);
@@ -53,10 +55,10 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
       const { txHash } = await locka.decideAccess(request.accessId, decision, durationSeconds);
       const message =
         decision === "approve"
-          ? `${request.providerName} can now read ${RECORD_SCOPE_LABELS[request.recordScope].toLowerCase()}.`
+          ? `${who.fullName} can now read ${RECORD_SCOPE_LABELS[request.recordScope].toLowerCase()}.`
           : decision === "reject"
-            ? `${request.providerName} was not granted access.`
-            : `${request.providerName} can no longer read your records.`;
+            ? `${who.fullName} was not granted access.`
+            : `${who.fullName} can no longer read your records.`;
       toast.success(message, { title: "Consent updated", txHash });
       setApproveOpen(false);
       await refresh();
@@ -78,13 +80,14 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">{request.providerName}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{who.fullName}</h3>
             <Badge variant="gray" dot={false}>
-              {PROVIDER_TYPE_LABELS[request.providerType]}
+              {PRACTITIONER_ROLE_LABELS[who.role]}
             </Badge>
           </div>
           <p className="mt-1 text-xs text-foreground/50">
-            Asked {formatRelative(request.requestedAt)} · request #{request.accessId}
+            {who.organizationName} · asked {formatRelative(request.requestedAt)} · request #
+            {request.accessId}
           </p>
         </div>
         <Badge variant={ACCESS_STATUS_VARIANTS[request.status]}>
@@ -115,8 +118,8 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <CopyableValue
-          value={request.providerId}
-          display={`Provider account ${shortAddress(request.providerId)}`}
+          value={formatPractitionerId(who.practitionerId)}
+          display={`Practitioner ${formatPractitionerId(who.practitionerId)}`}
         />
 
         <div className="flex flex-wrap gap-2">
@@ -156,7 +159,7 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
       <Modal
         open={approveOpen}
         onClose={() => setApproveOpen(false)}
-        title={`Approve access for ${request.providerName}?`}
+        title={`Approve access for ${who.fullName}?`}
         footer={
           <>
             <Button variant="secondary" onClick={() => setApproveOpen(false)}>
@@ -173,7 +176,11 @@ export function AccessRequestCard({ request }: AccessRequestCardProps) {
         }
       >
         <p className="text-sm text-foreground/70">
-          They will be able to read{" "}
+          {PRACTITIONER_ROLE_LABELS[who.role]} at {who.organizationName}, registered as{" "}
+          <span className="font-mono text-locka-cyan">
+            {formatPractitionerId(who.practitionerId)}
+          </span>
+          . They will be able to read{" "}
           <strong className="font-medium text-foreground">
             {RECORD_SCOPE_LABELS[request.recordScope].toLowerCase()}
           </strong>{" "}

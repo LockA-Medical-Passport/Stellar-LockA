@@ -3,8 +3,8 @@
 The public, patient-facing front end of [LockA Medical Passport](../../README.md): a
 patient-controlled health passport built on Stellar with Soroban smart contracts.
 
-Patients use this client to hold their own medical records, decide which provider may read which
-record category and for how long, and close that access again whenever they choose.
+Patients use this client to hold their own medical records, decide which practitioner may read
+which record category and for how long, and close that access again whenever they choose.
 
 ## What it covers
 

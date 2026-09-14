@@ -5,13 +5,18 @@
 The two front ends of [LockA Medical Passport](../README.md), the patient-controlled health
 passport built on Stellar with Soroban smart contracts.
 
-| Client                                 | Audience                                                    | Dev URL                                        |
-| -------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
-| [Patient-Client](Patient-Client/)      | The public. Patients holding their own medical passport.     | [localhost:3000](http://localhost:3000)        |
-| [Provider-Client](Provider-Client/)    | Hospitals, clinics, laboratories, pharmacies, and insurers. | [localhost:3001](http://localhost:3001)        |
+| Client                              | Audience                                                                                        | Dev URL                                 |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [Patient-Client](Patient-Client/)   | The public. Patients holding their own medical passport.                                        | [localhost:3000](http://localhost:3000) |
+| [Provider-Client](Provider-Client/) | Individual practitioners: doctors, nurses, midwives, pharmacists, lab scientists, and the rest. | [localhost:3001](http://localhost:3001) |
 
-The third front end, the administrator interface that verifies provider registrations, lives in
+The third front end, the administrator interface that reviews provider registrations, lives in
 [Admin-Client](../Admin-Client/) at the repository root.
+
+A LockA provider is a person, not a building. The practitioner registers in their own name, records
+the organisation they practise under, and the provider registry mints them a practitioner id. That
+id is stamped on every report and result they issue, so a patient can always trace a record back to
+the individual who signed it.
 
 ## What each client does
 
@@ -22,35 +27,41 @@ end:
 - Create a passport, deriving an identity commitment in the browser so the underlying phrase never
   leaves the device
 - Set and replace the recovery account that can rotate the passport key
-- Read every record a verified provider has added, filtered by category and status
+- Read every record a practitioner has issued, each showing who signed it, their role, their
+  practitioner id, and their organisation, filtered by category and status
 - Check a document against the commitment held for its record, by pasting a hash or hashing a file
   locally
-- Approve, narrow, reject, and revoke provider access requests, one record category and one time
-  window at a time
+- Approve, narrow, reject, and revoke practitioner access requests, one record category and one
+  time window at a time, seeing exactly which individual is asking
 - Read the full audit trail of who asked, who was let in, and what changed, each entry linked to
   its Stellar transaction
 
-**Provider-Client** is the organisation-facing dashboard:
+**Provider-Client** is the practitioner's dashboard:
 
-- Register a hospital, clinic, laboratory, pharmacy, insurer, or public health agency, submitting
-  only a hash of the licence number
-- See verification status, with access and record writing locked until an administrator verifies
-  the organisation
+- Register as an individual practitioner, giving a full government name, a practising licence
+  number, and the organisation worked with. The registry mints a practitioner id from those details
+- Start work immediately: registration is auto-approved for now, and a suspended or revoked
+  registration is what blocks access requests and record writing
 - Request patient access by passport id, stating the record category, the window, and the reason
   the patient will read
 - Work through patients with an open grant, seeing only the records that grant's scope covers
-- Issue records against a passport, anchoring the hash of the encrypted document and of its
-  storage pointer
+- Issue records against a passport, each stamped with the practitioner id, anchoring the hash of
+  the encrypted document and of its storage pointer
 - Mark a record amended or revoked
 - Verify that a document handed over by someone else is the document that was issued
 
+Only a hash of the licence number reaches the ledger. The full name, the licence number itself, and
+the organisation name stay off-chain with locka-api, under the platform's rule that no personally
+identifiable information is written to a public chain. What the chain holds is the practitioner id,
+the licence commitment, and the registration status.
+
 ## Requirements
 
-| Requirement | Version                                                                 |
-| ----------- | ----------------------------------------------------------------------- |
-| Node.js     | 20.9 or newer. Next.js 16 dropped Node 18.                              |
-| npm         | 10 or newer, or the equivalent pnpm, yarn, or bun.                      |
-| Browser     | Chrome 111+, Edge 111+, Firefox 111+, or Safari 16.4+ for development.  |
+| Requirement | Version                                                                |
+| ----------- | ---------------------------------------------------------------------- |
+| Node.js     | 20.9 or newer. Next.js 16 dropped Node 18.                             |
+| npm         | 10 or newer, or the equivalent pnpm, yarn, or bun.                     |
+| Browser     | Chrome 111+, Edge 111+, Firefox 111+, or Safari 16.4+ for development. |
 
 ## Dependencies
 
@@ -59,28 +70,28 @@ three.
 
 ### Runtime
 
-| Package          | Version  | Why it is here                                                                     |
-| ---------------- | -------- | ---------------------------------------------------------------------------------- |
-| `next`           | 16.2.12  | App Router, Turbopack, file-based routing, font and image optimisation.            |
-| `react`          | 19.2.4   | UI runtime.                                                                        |
-| `react-dom`      | 19.2.4   | DOM renderer, plus `createPortal` for the modal and toast layers.                  |
-| `clsx`           | ^2.1.1   | Conditional class names.                                                           |
-| `tailwind-merge` | ^3.6.0   | Resolves conflicting Tailwind classes so component props can override base styles. |
+| Package          | Version | Why it is here                                                                     |
+| ---------------- | ------- | ---------------------------------------------------------------------------------- |
+| `next`           | 16.2.12 | App Router, Turbopack, file-based routing, font and image optimisation.            |
+| `react`          | 19.2.4  | UI runtime.                                                                        |
+| `react-dom`      | 19.2.4  | DOM renderer, plus `createPortal` for the modal and toast layers.                  |
+| `clsx`           | ^2.1.1  | Conditional class names.                                                           |
+| `tailwind-merge` | ^3.6.0  | Resolves conflicting Tailwind classes so component props can override base styles. |
 
 ### Development
 
-| Package                  | Version | Why it is here                                            |
-| ------------------------ | ------- | --------------------------------------------------------- |
-| `typescript`             | ^5      | Type checking. Next.js 16 requires 5.1 or newer.          |
-| `tailwindcss`            | ^4      | The design system's utility layer.                        |
+| Package                  | Version | Why it is here                                                |
+| ------------------------ | ------- | ------------------------------------------------------------- |
+| `typescript`             | ^5      | Type checking. Next.js 16 requires 5.1 or newer.              |
+| `tailwindcss`            | ^4      | The design system's utility layer.                            |
 | `@tailwindcss/postcss`   | ^4      | Tailwind v4 PostCSS plugin, wired up in `postcss.config.mjs`. |
-| `eslint`                 | ^9      | Linting, via flat config.                                 |
-| `eslint-config-next`     | 16.2.12 | Next.js core-web-vitals and TypeScript rule sets.         |
-| `eslint-config-prettier` | ^10.1.8 | Turns off rules Prettier already handles.                 |
-| `prettier`               | ^3.9.6  | Formatting.                                               |
-| `@types/node`            | ^20     | Node type definitions.                                    |
-| `@types/react`           | ^19     | React type definitions.                                   |
-| `@types/react-dom`       | ^19     | React DOM type definitions.                               |
+| `eslint`                 | ^9      | Linting, via flat config.                                     |
+| `eslint-config-next`     | 16.2.12 | Next.js core-web-vitals and TypeScript rule sets.             |
+| `eslint-config-prettier` | ^10.1.8 | Turns off rules Prettier already handles.                     |
+| `prettier`               | ^3.9.6  | Formatting.                                                   |
+| `@types/node`            | ^20     | Node type definitions.                                        |
+| `@types/react`           | ^19     | React type definitions.                                       |
+| `@types/react-dom`       | ^19     | React DOM type definitions.                                   |
 
 No wallet or Stellar SDK dependency is installed yet. Wallet integration is the next task, and the
 two seams it plugs into are described under [Wallet integration](#wallet-integration-next-step).
@@ -114,15 +125,15 @@ scripts so both clients can run side by side.
 
 ### Everything else
 
-| Command                | What it does                                             |
-| ---------------------- | -------------------------------------------------------- |
-| `npm run dev`          | Development server with hot reloading, on Turbopack.     |
-| `npm run build`        | Production build. Also runs a full TypeScript check.     |
-| `npm start`            | Serves the production build. Run `npm run build` first.  |
-| `npm run lint`         | ESLint over the whole project.                           |
-| `npm run format`       | Rewrites files with Prettier.                            |
-| `npm run format:check` | Fails if anything is unformatted. Useful in CI.          |
-| `npx tsc --noEmit`     | Type check on its own, without building.                 |
+| Command                | What it does                                            |
+| ---------------------- | ------------------------------------------------------- |
+| `npm run dev`          | Development server with hot reloading, on Turbopack.    |
+| `npm run build`        | Production build. Also runs a full TypeScript check.    |
+| `npm start`            | Serves the production build. Run `npm run build` first. |
+| `npm run lint`         | ESLint over the whole project.                          |
+| `npm run format`       | Rewrites files with Prettier.                           |
+| `npm run format:check` | Fails if anything is unformatted. Useful in CI.         |
+| `npx tsc --noEmit`     | Type check on its own, without building.                |
 
 ## Sample data mode
 
@@ -132,9 +143,10 @@ to an in-memory sample ledger in `src/lib/demo/`, which resets on reload. Connec
 hands the UI a fixed testnet address, and an amber banner across every page states that nothing on
 screen is a real medical record.
 
-The sample ledger is one patient passport, five verified providers, a spread of records across
-categories, and access requests in every state, which is what makes the empty states, the pending
-consent flow, and the expiry handling reviewable before any chain work lands.
+The sample ledger is one patient passport, five registered practitioners across four
+organisations, a spread of records across categories, and access requests in every state, which is
+what makes the empty states, the pending consent flow, and the expiry handling reviewable before
+any chain work lands.
 
 Set `NEXT_PUBLIC_DEMO_MODE=false` once the live client is implemented. Until then that setting
 makes every read and write throw with a message pointing at the file to fill in.
@@ -144,16 +156,16 @@ makes every read and write throw with a message pointing at the file to fill in.
 Both clients read the same `NEXT_PUBLIC_*` variables, documented in each `.env.example`. Every one
 has a Stellar testnet default, so `.env.local` is only needed to point a client somewhere else.
 
-| Variable                                            | Default                              |
-| --------------------------------------------------- | ------------------------------------ |
-| `NEXT_PUBLIC_DEMO_MODE`                             | `true`                               |
-| `NEXT_PUBLIC_LOCKA_API_URL`                         | empty                                |
-| `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`            | `Test SDF Network ; September 2015`  |
+| Variable                                            | Default                               |
+| --------------------------------------------------- | ------------------------------------- |
+| `NEXT_PUBLIC_DEMO_MODE`                             | `true`                                |
+| `NEXT_PUBLIC_LOCKA_API_URL`                         | empty                                 |
+| `NEXT_PUBLIC_STELLAR_NETWORK_PASSPHRASE`            | `Test SDF Network ; September 2015`   |
 | `NEXT_PUBLIC_SOROBAN_RPC_URL`                       | `https://soroban-testnet.stellar.org` |
-| `NEXT_PUBLIC_PATIENT_PASSPORT_REGISTRY_CONTRACT_ID` | empty                                |
-| `NEXT_PUBLIC_PROVIDER_REGISTRY_CONTRACT_ID`         | empty                                |
-| `NEXT_PUBLIC_MEDICAL_RECORD_REGISTRY_CONTRACT_ID`   | empty                                |
-| `NEXT_PUBLIC_CONSENT_ACCESS_MANAGER_CONTRACT_ID`    | empty                                |
+| `NEXT_PUBLIC_PATIENT_PASSPORT_REGISTRY_CONTRACT_ID` | empty                                 |
+| `NEXT_PUBLIC_PROVIDER_REGISTRY_CONTRACT_ID`         | empty                                 |
+| `NEXT_PUBLIC_MEDICAL_RECORD_REGISTRY_CONTRACT_ID`   | empty                                 |
+| `NEXT_PUBLIC_CONSENT_ACCESS_MANAGER_CONTRACT_ID`    | empty                                 |
 
 The Settings screen in each client shows the network, the RPC endpoint, and which contract ids are
 configured, which is the quickest way to confirm an environment is pointing where you think.
@@ -181,10 +193,14 @@ Conventions worth knowing before adding code:
   `hooks/`, or `lib/` once a second feature needs it.
 - `src/lib/domain.ts` mirrors the Soroban contract types in [Smart-Contracts](../Smart-Contracts/)
   and uses the contracts' own variant names, so values pass straight through once bindings are
-  generated.
+  generated. It is identical in both clients, since a record's practitioner stamp has to mean the
+  same thing on either side.
+- `provider-registry` still carries one `ProviderType` enum mixing individuals and institutions.
+  The clients model the split it needs: `PractitionerRole` for the person, `OrganizationType` for
+  where they practise.
 - Data loading is triggered by wallet events, not by render effects. A connected account is what
   makes passport or provider data fetchable, so the load starts in `WalletProvider` and lands in a
-  module store (`passport-store.ts`, `provider-store.ts`) that screens read through
+  module store (`passport-store.ts`, `practitioner-store.ts`) that screens read through
   `useSyncExternalStore`.
 - The design system matches the Admin-Client token for token: navy surfaces, glass cards, and the
   cyan and blue accents from [the reference build](https://locka.remixdapp.eth.limo/).
@@ -198,7 +214,7 @@ a live network:
 
 1. `src/features/wallet/adapter.ts` — implement `freighterAdapter` against
    `@stellar/freighter-api`. Nothing else in either app talks to a wallet.
-2. `src/lib/locka-client.ts` — implement `sorobanPatientClient` and `sorobanProviderClient` against
+2. `src/lib/locka-client.ts` — implement `sorobanPatientClient` and `sorobanPractitionerClient` against
    `@stellar/stellar-sdk` and the generated contract bindings. Every method carries a comment
    naming the contract function it maps to.
 

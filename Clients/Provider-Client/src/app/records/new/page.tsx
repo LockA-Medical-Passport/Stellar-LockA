@@ -1,19 +1,19 @@
 "use client";
 
-import { ProviderGate } from "@/features/provider/ProviderGate";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { AddRecordForm } from "@/features/records/AddRecordForm";
 
 export default function AddRecordPage() {
   return (
-    <ProviderGate requireVerified>
+    <PractitionerGate requirePractising>
       <AddRecordView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }
 
 function AddRecordView() {
-  const { provider } = useProviderData();
-  if (!provider) return null;
-  return <AddRecordForm provider={provider} />;
+  const { practitioner } = usePractitionerData();
+  if (!practitioner) return null;
+  return <AddRecordForm practitioner={practitioner} />;
 }

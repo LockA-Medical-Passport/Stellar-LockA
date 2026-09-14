@@ -32,7 +32,8 @@ export function RecordsView() {
       if (!needle) return true;
       return (
         record.title.toLowerCase().includes(needle) ||
-        record.providerName.toLowerCase().includes(needle) ||
+        record.issuedBy.fullName.toLowerCase().includes(needle) ||
+        record.issuedBy.organizationName.toLowerCase().includes(needle) ||
         RECORD_TYPE_LABELS[record.recordType].toLowerCase().includes(needle)
       );
     });
@@ -49,7 +50,7 @@ export function RecordsView() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1fr_1fr]">
           <Input
             label="Search"
-            placeholder="Record, provider, or category"
+            placeholder="Record, practitioner, organisation, or category"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
           />

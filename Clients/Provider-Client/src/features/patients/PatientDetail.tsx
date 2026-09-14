@@ -6,7 +6,7 @@ import { Card, InfoGrid, InfoRow } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useProviderData } from "@/features/provider/useProviderData";
+import { usePractitionerData } from "@/features/practitioner/usePractitionerData";
 import { RecordCard } from "@/features/records/RecordCard";
 import { RECORD_SCOPE_DESCRIPTIONS, RECORD_SCOPE_LABELS, formatPassportId } from "@/lib/domain";
 import { formatDateTime, formatDuration, formatRelative, pluralize } from "@/lib/format";
@@ -16,7 +16,8 @@ export interface PatientDetailProps {
 }
 
 export function PatientDetail({ passportId }: PatientDetailProps) {
-  const { provider, liveGrants, patientRecords, accessRequests, isVerified } = useProviderData();
+  const { practitioner, liveGrants, patientRecords, accessRequests, canPractise } =
+    usePractitionerData();
   const grant = liveGrants.find((candidate) => candidate.passportId === passportId);
   const everRequested = accessRequests.some((request) => request.passportId === passportId);
 
@@ -33,7 +34,7 @@ export function PatientDetail({ passportId }: PatientDetailProps) {
           <LinkButton href="/patients" variant="secondary">
             Back to patients
           </LinkButton>
-          {isVerified && <LinkButton href="/access/new">Request access</LinkButton>}
+          {canPractise && <LinkButton href="/access/new">Request access</LinkButton>}
         </div>
       </div>
     );
@@ -47,7 +48,7 @@ export function PatientDetail({ passportId }: PatientDetailProps) {
         title={formatPassportId(passportId)}
         description={`Readable under grant #${grant.accessId} until ${formatDateTime(grant.expiresAt)}`}
         action={
-          isVerified ? (
+          canPractise ? (
             <LinkButton href={`/records/new?passport=${passportId}`} size="sm">
               Add record
             </LinkButton>
@@ -100,7 +101,7 @@ export function PatientDetail({ passportId }: PatientDetailProps) {
             <RecordCard
               key={record.recordId}
               record={record}
-              manageable={record.providerId === provider?.providerId}
+              manageable={record.issuedBy.practitionerId === practitioner?.practitionerId}
             />
           ))
         )}

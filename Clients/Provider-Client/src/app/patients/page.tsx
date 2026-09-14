@@ -1,12 +1,12 @@
 "use client";
 
 import { PatientsView } from "@/features/patients/PatientsView";
-import { ProviderGate } from "@/features/provider/ProviderGate";
+import { PractitionerGate } from "@/features/practitioner/PractitionerGate";
 
 export default function PatientsPage() {
   return (
-    <ProviderGate>
+    <PractitionerGate>
       <PatientsView />
-    </ProviderGate>
+    </PractitionerGate>
   );
 }

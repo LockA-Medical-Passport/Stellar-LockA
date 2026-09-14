@@ -52,7 +52,7 @@ export function OverviewDashboard({ passport }: { passport: Passport }) {
           {pendingRequests
             .map(
               (request) =>
-                `${request.providerName} — ${RECORD_SCOPE_LABELS[request.recordScope].toLowerCase()}`,
+                `${request.requestedBy.fullName} — ${RECORD_SCOPE_LABELS[request.recordScope].toLowerCase()}`,
             )
             .join("; ")}
         </Callout>
@@ -113,7 +113,7 @@ export function OverviewDashboard({ passport }: { passport: Passport }) {
                 <li key={grant.accessId} className="flex items-start justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {grant.providerName}
+                      {grant.requestedBy.fullName}
                     </p>
                     <p className="mt-0.5 text-xs text-foreground/50">
                       {RECORD_SCOPE_LABELS[grant.recordScope]} ·{" "}
